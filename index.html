@@ -288,27 +288,32 @@
 
         .float-button {
             position: fixed;
-            bottom: 24px;
-            right: 24px;
-            width: 56px;
-            height: 56px;
+            bottom: 30px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
             background: var(--color-primary);
             color: white;
             border: none;
             cursor: pointer;
-            font-size: 24px;
+            font-size: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 16px rgba(45,212,191,0.4);
+            box-shadow: 0 3px 12px rgba(45,212,191,0.3);
             transition: all 0.3s ease;
             z-index: 50;
+            pointer-events: auto;
         }
 
         .float-button:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(45,212,191,0.5);
+            transform: scale(1.15);
+            box-shadow: 0 5px 16px rgba(45,212,191,0.4);
+        }
+
+        .float-button:active {
+            transform: scale(0.92);
         }
 
         .itinerary-item {
@@ -539,6 +544,7 @@
             overflow-y: auto;
             max-height: calc(100vh - 350px);
             padding-right: 4px;
+            padding-bottom: 10px;
         }
 
         .scroll-container::-webkit-scrollbar {
@@ -757,17 +763,27 @@
                             </div>
                         </div>
 
-                        <div class="itinerary-item" draggable="true">
-                            <div class="itinerary-item-time">
-                                <i class="fas fa-clock"></i> {{ item.time }}
+                        <div class="itinerary-item" draggable="true" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+                            <div style="flex: 1;">
+                                <div class="itinerary-item-time">
+                                    <i class="fas fa-clock"></i> {{ item.time }}
+                                </div>
+                                <div class="itinerary-item-name">{{ item.name }}</div>
+                                <div class="itinerary-item-category">{{ item.category }}</div>
+                                <div v-if="item.hours" style="font-size: 12px; color: #64748b; margin-top: 8px;">
+                                    營業時間: {{ item.hours }}
+                                </div>
+                                <div v-if="item.notes" style="font-size: 12px; color: #64748b; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0;">
+                                    {{ item.notes }}
+                                </div>
                             </div>
-                            <div class="itinerary-item-name">{{ item.name }}</div>
-                            <div class="itinerary-item-category">{{ item.category }}</div>
-                            <div v-if="item.hours" style="font-size: 12px; color: #64748b; margin-top: 8px;">
-                                營業時間: {{ item.hours }}
-                            </div>
-                            <div v-if="item.notes" style="font-size: 12px; color: #64748b; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0;">
-                                {{ item.notes }}
+                            <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                                <button class="btn-secondary" style="padding: 6px 10px; font-size: 12px;" @click="editItinerary(getItineraryForDate(selectedDate).indexOf(item), selectedDate)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn-danger" @click="deleteItineraryConfirm(getItineraryForDate(selectedDate).indexOf(item), selectedDate)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
                         </div>
 
@@ -1081,9 +1097,14 @@
                 <textarea v-model="newItinerary.notes" placeholder="輸入備註" class="input-field" style="height: 80px; resize: none;"></textarea>
             </div>
 
-            <button class="btn-primary" style="width: 100%; padding: 12px;" @click="addItinerary">
-                <i class="fas fa-plus"></i> 新增
-            </button>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn-primary" style="flex: 1; padding: 12px;" @click="saveItinerary">
+                    <i class="fas fa-plus"></i> {{ newItinerary.isEditing ? '更新' : '新增' }}
+                </button>
+                <button v-if="newItinerary.isEditing" class="btn-danger" style="padding: 12px 16px;" @click="deleteItineraryConfirm(newItinerary.editIndex, selectedDate)">
+                    <i class="fas fa-trash"></i> 刪除
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1207,6 +1228,7 @@ createApp({
             showAddExpenseModal: false,
             showConfirmation: false,
             confirmationMessage: '',
+            deleteTarget: null,
             exchangeAmount: null,
             exchangeResult: null,
 
@@ -1283,7 +1305,10 @@ createApp({
             ],
 
             expenses: [
-                { date: '12/17', name: '超市採買', category: '食物', amount: 1000, paymentMethod: '現金', notes: '自行處理' },
+                { date: '12/17', name: '機場接機費', category: '交通', amount: 70000, paymentMethod: '現金', notes: '10人平分' },
+                { date: '12/18', name: '雙板滑雪課程', category: '門票', amount: 70000, paymentMethod: '現金', notes: '3人平分' },
+                { date: '12/18', name: '單板滑雪課程', category: '門票', amount: 80000, paymentMethod: '現金', notes: '6人平分' },
+                { date: '12/18', name: '住宿至滑雪場接送', category: '交通', amount: 40000, paymentMethod: '現金', notes: '往返費用' }
             ],
 
             splitBills: [
@@ -1291,7 +1316,7 @@ createApp({
                 { date: '12/18', description: '雙板滑雪教練課', people: 3, amount: 70000, currency: '¥', paymentMethod: 'cash' },
                 { date: '12/18', description: '單板滑雪教練課', people: 6, amount: 80000, currency: '¥', paymentMethod: 'cash' },
                 { date: '12/18', description: '接送費用', people: 10, amount: 40000, currency: '¥', paymentMethod: 'cash' },
-                { date: '12/21', description: '一日包車行程', people: 6, amount: 16000, currency: 'NT$', paymentMethod: 'transfer' },
+                { date: '12/21', description: '一日包車行程', people: 2, amount: 60000, currency: 'NT$', paymentMethod: 'transfer' },
                 { date: '12/22', description: '回程接送費', people: 6, amount: 40000, currency: '¥', paymentMethod: 'cash' }
             ],
 
@@ -1301,7 +1326,9 @@ createApp({
                 category: '景點',
                 hours: '',
                 notes: '',
-                transportTime: ''
+                transportTime: '',
+                isEditing: false,
+                editIndex: null
             },
 
             newShopping: {
@@ -1343,7 +1370,7 @@ createApp({
             }
         },
 
-        addItinerary() {
+        saveItinerary() {
             if (this.newItinerary.name && this.newItinerary.time) {
                 const targetDate = this.selectedDate;
                 let dayData = this.itineraries.find(i => i.date === targetDate);
@@ -1353,18 +1380,62 @@ createApp({
                     this.itineraries.push(dayData);
                 }
                 
-                dayData.items.push({
+                const itemData = {
                     time: this.newItinerary.time,
                     name: this.newItinerary.name,
                     category: this.newItinerary.category,
                     hours: this.newItinerary.hours || null,
                     notes: this.newItinerary.notes || null,
                     transportTime: this.newItinerary.transportTime || null
-                });
+                };
 
-                this.newItinerary = { name: '', time: '', category: '景點', hours: '', notes: '', transportTime: '' };
+                if (this.newItinerary.isEditing) {
+                    // 更新現有行程
+                    dayData.items[this.newItinerary.editIndex] = itemData;
+                } else {
+                    // 新增行程
+                    dayData.items.push(itemData);
+                }
+
+                this.newItinerary = { name: '', time: '', category: '景點', hours: '', notes: '', transportTime: '', isEditing: false, editIndex: null };
                 this.showAddModal = false;
             }
+        },
+
+        editItinerary(index, date) {
+            const dayData = this.itineraries.find(i => i.date === date);
+            if (dayData && dayData.items[index]) {
+                const item = dayData.items[index];
+                this.newItinerary = {
+                    name: item.name,
+                    time: item.time,
+                    category: item.category,
+                    hours: item.hours || '',
+                    notes: item.notes || '',
+                    transportTime: item.transportTime || '',
+                    isEditing: true,
+                    editIndex: index
+                };
+                this.showAddModal = true;
+            }
+        },
+
+        deleteItineraryConfirm(index, date) {
+            this.confirmationMessage = '確定要刪除此行程嗎？';
+            this.deleteTarget = { index, date };
+            this.showConfirmation = true;
+        },
+
+        confirmDelete() {
+            if (this.deleteTarget) {
+                const dayData = this.itineraries.find(i => i.date === this.deleteTarget.date);
+                if (dayData) {
+                    dayData.items.splice(this.deleteTarget.index, 1);
+                }
+                this.deleteTarget = null;
+                this.showAddModal = false;
+            }
+            this.showConfirmation = false;
         },
 
         addShoppingItem() {
