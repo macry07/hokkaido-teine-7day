@@ -27,6 +27,20 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans CJK TC', sans-serif;
             background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
             color: #1e293b;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            margin: 0;
+            padding: 0;
+        }
+
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
 
         .banner-container {
@@ -59,6 +73,7 @@
             margin-top: -40px;
             z-index: 10;
             padding: 0 16px;
+            padding-bottom: 0;
         }
 
         .tab-buttons {
@@ -206,7 +221,7 @@
             width: 100%;
             border-radius: 20px 20px 0 0;
             padding: 24px;
-            max-height: 80vh;
+            max-height: 90vh;
             overflow-y: auto;
             animation: slideUp 0.3s ease;
         }
@@ -542,7 +557,7 @@
 
         .scroll-container {
             overflow-y: auto;
-            max-height: calc(100vh - 350px);
+            max-height: calc(100vh - 200px);
             padding-right: 4px;
             padding-bottom: 10px;
         }
